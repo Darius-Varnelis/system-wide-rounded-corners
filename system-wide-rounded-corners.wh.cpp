@@ -2,7 +2,7 @@
 // @id              system-wide-rounded-corners
 // @name            System-Wide Rounded Corners
 // @description     Blacks out the corners of every monitor so the screen looks like it has rounded corners, like a Mac
-// @version         1.3
+// @version         1.0
 // @author          Meowl
 // @github          https://github.com/Darius-Varnelis
 // @include         explorer.exe
@@ -601,8 +601,8 @@ bool IsShellBackgroundWindow(HWND hwnd) {
 }
 
 // Returns the monitor that `hwnd` fills completely with fullscreen content,
-// or null. Ordinary maximized windows (captioned) don't count, even with an
-// auto-hiding taskbar where they also cover the whole monitor.
+// or null. Ordinary maximized windows never count, even with an auto-hiding
+// taskbar where they also cover the whole monitor.
 HMONITOR GetFullscreenMonitor(HWND hwnd) {
     if (!hwnd) {
         return nullptr;
@@ -620,8 +620,15 @@ HMONITOR GetFullscreenMonitor(HWND hwnd) {
         return nullptr;
     }
 
+    // Fullscreen content has no window frame at all. Ordinary windows keep
+    // their resize frame (WS_THICKFRAME) even when maximized, including apps
+    // that draw their own title bar and drop WS_CAPTION (Electron apps,
+    // Spotify, Discord, VS Code, ...), which with an auto-hiding taskbar
+    // cover the whole monitor when maximized. Real fullscreen modes strip
+    // both: browser F11 and video fullscreen (which can stay WS_MAXIMIZE
+    // while doing so), borderless games and video players.
     LONG style = GetWindowLongW(hwnd, GWL_STYLE);
-    if ((style & WS_MAXIMIZE) && (style & WS_CAPTION) == WS_CAPTION) {
+    if ((style & WS_THICKFRAME) || (style & WS_CAPTION) == WS_CAPTION) {
         return nullptr;
     }
 
